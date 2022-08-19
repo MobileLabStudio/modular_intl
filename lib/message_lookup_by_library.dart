@@ -105,7 +105,10 @@ class CompositeMessageLookup implements MessageLookup {
     String? package,
     dynamic lookup,
   ) {
-    availableMessages[package]?[locale] = lookup;
+    if (!availableMessages.containsKey(package)) {
+      availableMessages[package] = {};
+    }
+    availableMessages[package]![locale] = lookup;
   }
 
   dynamic _getMessageLockup(String? locale, String? package) {
