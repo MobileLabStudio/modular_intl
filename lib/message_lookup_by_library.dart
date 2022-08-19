@@ -18,12 +18,13 @@ import 'package:intl/src/intl_helpers.dart';
 /// This is a message lookup mechanism that delegates to one of a collection
 /// of individual [MessageLookupByLibrary] instances.
 class CompositeMessageLookup implements MessageLookup {
-  /// A map from locale names to the corresponding lookups.
-  Map<String, MessageLookupByLibrary> availableMessages = {};
+  /// A map from package names to map of locale names to the corresponding lookups.
+  Map<String?, Map<String, MessageLookupByLibrary>> availableMessages = {};
 
   /// Return true if we have a message lookup for [localeName].
-  bool localeExists(String localeName) =>
-      availableMessages.containsKey(localeName);
+  bool localeExists(String? package, String localeName) {
+    return availableMessages[package]?.containsKey(localeName) ?? false;
+  }
 
   /// The last locale in which we looked up messages.
   ///
@@ -38,29 +39,45 @@ class CompositeMessageLookup implements MessageLookup {
   /// translated version with the values in [args] interpolated.  If nothing is
   /// found, return the result of [ifAbsent] or [messageText].
   @override
-  String? lookupMessage(String? messageText, String? locale, String? name,
-      List<Object>? args, String? meaning,
-      {MessageIfAbsent? ifAbsent}) {
+  String? lookupMessage(
+    String? messageText,
+    String? locale,
+    String? name,
+    List<Object>? args,
+    String? meaning, {
+    MessageIfAbsent? ifAbsent,
+    String? package,
+  }) {
     // If passed null, use the default.
     var knownLocale = locale ?? Intl.getCurrentLocale();
     var messages = (knownLocale == _lastLocale)
         ? _lastLookup
-        : _lookupMessageCatalog(knownLocale);
+        : _lookupMessageCatalog(package, knownLocale);
     // If we didn't find any messages for this locale, use the original string,
     // faking interpolations if necessary.
     if (messages == null) {
       return ifAbsent == null ? messageText : ifAbsent(messageText, args);
     }
-    return messages.lookupMessage(messageText, locale, name, args, meaning,
-        ifAbsent: ifAbsent);
+    return messages.lookupMessage(
+      messageText,
+      locale,
+      name,
+      args,
+      meaning,
+      ifAbsent: ifAbsent,
+    );
   }
 
   /// Find the right message lookup for [locale].
-  MessageLookupByLibrary? _lookupMessageCatalog(String locale) {
-    var verifiedLocale = Intl.verifiedLocale(locale, localeExists,
-        onFailure: (locale) => locale);
+  MessageLookupByLibrary? _lookupMessageCatalog(
+      String? package, String locale) {
+    var verifiedLocale = Intl.verifiedLocale(
+      locale,
+      (locale) => localeExists(package, locale),
+      onFailure: (locale) => locale,
+    );
     _lastLocale = locale;
-    _lastLookup = availableMessages[verifiedLocale];
+    _lastLookup = availableMessages[package]?[verifiedLocale];
     return _lastLookup;
   }
 
@@ -68,8 +85,8 @@ class CompositeMessageLookup implements MessageLookup {
   /// [findLocale] will be called and the result stored as the lookup
   /// mechanism for that locale.
   @override
-  void addLocale(String localeName, Function findLocale) {
-    if (localeExists(localeName)) return;
+  void addLocale(String localeName, Function findLocale, [String? package]) {
+    if (localeExists(package, localeName)) return;
     var canonical = Intl.canonicalizedLocale(localeName);
     var newLocale = findLocale(canonical);
     if (newLocale != null) {

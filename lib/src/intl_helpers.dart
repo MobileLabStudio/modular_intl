@@ -54,9 +54,15 @@ class UninitializedLocaleData<F> implements MessageLookup {
       (_badMessages.toSet().toList()..sort()).join('\n    ');
 
   @override
-  String? lookupMessage(String? messageText, String? locale, String? name,
-      List<Object>? args, String? meaning,
-      {MessageIfAbsent? ifAbsent}) {
+  String? lookupMessage(
+    String? messageText,
+    String? locale,
+    String? name,
+    List<Object>? args,
+    String? meaning, {
+    MessageIfAbsent? ifAbsent,
+    String? package,
+  }) {
     if (throwOnFallback) {
       _badMessages.add((name ?? messageText)!);
     }
@@ -83,14 +89,21 @@ class UninitializedLocaleData<F> implements MessageLookup {
   }
 
   @override
-  void addLocale(String localeName, Function findLocale) => _throwException();
+  void addLocale(String localeName, Function findLocale, [String? package]) =>
+      _throwException();
 }
 
 abstract class MessageLookup {
-  String? lookupMessage(String? messageText, String? locale, String? name,
-      List<Object>? args, String? meaning,
-      {MessageIfAbsent? ifAbsent});
-  void addLocale(String localeName, Function findLocale);
+  String? lookupMessage(
+    String? messageText,
+    String? locale,
+    String? name,
+    List<Object>? args,
+    String? meaning, {
+    MessageIfAbsent? ifAbsent,
+    String? package,
+  });
+  void addLocale(String localeName, Function findLocale, [String? package]);
 }
 
 class LocaleDataException implements Exception {
