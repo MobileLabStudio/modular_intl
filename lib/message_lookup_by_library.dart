@@ -31,6 +31,7 @@ class CompositeMessageLookup implements MessageLookup {
   ///  If this locale matches the new one then we can skip looking up the
   ///  messages and assume they will be the same as last time.
   String? _lastLocale;
+  String? _lastPackage;
 
   /// Caches the last messages that we found
   MessageLookupByLibrary? _lastLookup;
@@ -50,7 +51,7 @@ class CompositeMessageLookup implements MessageLookup {
   }) {
     // If passed null, use the default.
     var knownLocale = locale ?? Intl.getCurrentLocale();
-    var messages = (knownLocale == _lastLocale)
+    var messages = (knownLocale == _lastLocale && package == _lastPackage)
         ? _lastLookup
         : _lookupMessageCatalog(package, knownLocale);
     // If we didn't find any messages for this locale, use the original string,
@@ -77,6 +78,7 @@ class CompositeMessageLookup implements MessageLookup {
       onFailure: (locale) => locale,
     );
     _lastLocale = locale;
+    _lastPackage = package;
     _lastLookup = _getMessageLockup(verifiedLocale, package);
     return _lastLookup;
   }
@@ -94,6 +96,7 @@ class CompositeMessageLookup implements MessageLookup {
       _addMessageLookup(canonical, package, newLocale);
       // If there was already a failed lookup for [newLocale], null the cache.
       if (_lastLocale == newLocale) {
+        _lastPackage = null;
         _lastLocale = null;
         _lastLookup = null;
       }
