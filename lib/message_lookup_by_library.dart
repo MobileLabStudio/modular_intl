@@ -23,7 +23,7 @@ class CompositeMessageLookup implements MessageLookup {
 
   /// Return true if we have a message lookup for [localeName].
   bool localeExists(String? package, String localeName) {
-    return availableMessages[package]?.containsKey(localeName) ?? false;
+    return _getMessageLockup(localeName, package) != null;
   }
 
   /// The last locale in which we looked up messages.
@@ -77,7 +77,7 @@ class CompositeMessageLookup implements MessageLookup {
       onFailure: (locale) => locale,
     );
     _lastLocale = locale;
-    _lastLookup = availableMessages[package]?[verifiedLocale];
+    _lastLookup = _getMessageLockup(verifiedLocale, package);
     return _lastLookup;
   }
 
@@ -90,14 +90,26 @@ class CompositeMessageLookup implements MessageLookup {
     var canonical = Intl.canonicalizedLocale(localeName);
     var newLocale = findLocale(canonical);
     if (newLocale != null) {
-      availableMessages[localeName] = newLocale;
-      availableMessages[canonical] = newLocale;
+      _addMessageLookup(localeName, package, newLocale);
+      _addMessageLookup(canonical, package, newLocale);
       // If there was already a failed lookup for [newLocale], null the cache.
       if (_lastLocale == newLocale) {
         _lastLocale = null;
         _lastLookup = null;
       }
     }
+  }
+
+  void _addMessageLookup(
+    String locale,
+    String? package,
+    dynamic lookup,
+  ) {
+    availableMessages[package]?[locale] = lookup;
+  }
+
+  dynamic _getMessageLockup(String? locale, String? package) {
+    return availableMessages[package]?[locale];
   }
 }
 
